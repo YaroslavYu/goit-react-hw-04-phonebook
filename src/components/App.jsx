@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 
 import { ContactForm } from './ContactForm';
@@ -16,46 +16,21 @@ const initialContacts = [
   { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
 ];
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
+  useEffect(() => {
     const savedContacts = localStorage.getItem(LOCALSTORAGE_KEY_CONTACTS);
-    if (savedContacts !== null) {
-      const pasredContacts = JSON.parse(savedContacts);
-      this.setState({ contacts: pasredContacts });
-      return;
+    if (savedContacts === null) {
+      setContacts(initialContacts);
     }
-    this.setState({ contacts: initialContacts });
-  }
+    localStorage.setItem(LOCALSTORAGE_KEY_CONTACTS, JSON.stringify(contacts));
+  }, [contacts]);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      const contactsStringify = JSON.stringify(this.state.contacts);
-      localStorage.setItem(LOCALSTORAGE_KEY_CONTACTS, contactsStringify);
-    }
-  }
-
-  addContact = (newContact, actions) => {
-    const isAddedBefore = this.checkContactIsAdded(newContact);
-    if (isAddedBefore) {
-      alert('contact be already added before');
-      return;
-    }
-
-    const contactDataObj = { id: nanoid(3), ...newContact };
-    this.setState(prevState => {
-      return { contacts: [...prevState.contacts, contactDataObj] };
-    });
-    actions.resetForm();
-  };
-
-  checkContactIsAdded = newContact => {
+  const checkContactIsAdded = newContact => {
     const nameContact = newContact.name.trim().toUpperCase();
-    const findContact = this.state.contacts.find(
+    const findContact = contacts.find(
       ({ name }) => name.trim().toUpperCase() === nameContact
     );
     if (findContact) {
@@ -63,39 +38,46 @@ export class App extends Component {
     } else return false;
   };
 
-  addFilter = e => {
-    const nameFilter = e.target.value;
-    this.setState({ filter: nameFilter });
+  const addContact = (newContact, actions) => {
+    const isAddedBefore = checkContactIsAdded(newContact);
+    if (isAddedBefore) {
+      alert('contact be already added before');
+      return;
+    }
+
+    const contactDataObj = { id: nanoid(3), ...newContact };
+    setContacts(prev => [...prev, contactDataObj]);
+    actions.resetForm();
   };
 
-  filteredContacts = () => {
-    const filterToUpper = this.state.filter.toUpperCase();
+  const addFilter = e => {
+    const nameFilter = e.target.value;
+    setFilter(nameFilter);
+  };
 
-    return this.state.contacts.filter(({ name }) =>
+  const filteredContacts = () => {
+    const filterToUpper = filter.toUpperCase();
+
+    return contacts.filter(({ name }) =>
       name.toUpperCase().includes(filterToUpper)
     );
   };
 
-  delContact = idx => {
-    const newContacts = this.state.contacts.reduce(
-      (acc, contact, index) => (index === idx ? acc : [...acc, contact]),
-      []
+  const delContact = idx => {
+    const newContacts = contacts.filter(
+      contact => contacts.indexOf(contact) !== idx
     );
-    this.setState({ contacts: [...newContacts] });
+    setContacts(newContacts);
   };
 
-  render() {
-    const filtered = this.filteredContacts();
+  return (
+    <StyledAppContainer>
+      <Title>Phonebook</Title>
+      <ContactForm addContact={addContact} />
 
-    return (
-      <StyledAppContainer>
-        <Title>Phonebook</Title>
-        <ContactForm addContact={this.addContact} />
-
-        <Title>Contacts</Title>
-        <Filter filter={this.addFilter} />
-        <ContactList contacts={filtered} onDelete={this.delContact} />
-      </StyledAppContainer>
-    );
-  }
-}
+      <Title>Contacts</Title>
+      <Filter filter={addFilter} />
+      <ContactList contacts={filteredContacts()} onDelete={delContact} />
+    </StyledAppContainer>
+  );
+};
