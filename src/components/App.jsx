@@ -17,14 +17,13 @@ const initialContacts = [
 ];
 
 export const App = () => {
-  const [contacts, setContacts] = useState([]);
   const [filter, setFilter] = useState('');
+  const [contacts, setContacts] = useState(() => {
+    const savedContacts = localStorage.getItem(LOCALSTORAGE_KEY_CONTACTS);
+    return savedContacts ? JSON.parse(savedContacts) : initialContacts;
+  });
 
   useEffect(() => {
-    const savedContacts = localStorage.getItem(LOCALSTORAGE_KEY_CONTACTS);
-    if (savedContacts === null) {
-      setContacts(initialContacts);
-    }
     localStorage.setItem(LOCALSTORAGE_KEY_CONTACTS, JSON.stringify(contacts));
   }, [contacts]);
 
